@@ -1,7 +1,9 @@
 package com.webshoprest.api.v1.services.impl;
 
 import com.webshoprest.api.v1.exceptions.UserNotFoundException;
+import com.webshoprest.api.v1.services.EmailService;
 import com.webshoprest.api.v1.services.UserService;
+import com.webshoprest.api.v1.util.EmailContentUtil;
 import com.webshoprest.domain.City;
 import com.webshoprest.domain.Country;
 import com.webshoprest.domain.User;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,14 +26,18 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     private CityRepository cityRepository;
     private CountryRepository countryRepository;
+    private EmailService emailService;
+    private HttpServletRequest request;
     @PersistenceContext
     private EntityManager em;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, CityRepository cityRepository, CountryRepository countryRepository) {
+    public UserServiceImpl(UserRepository userRepository, CityRepository cityRepository, CountryRepository countryRepository, EmailService emailService, HttpServletRequest request) {
         this.userRepository = userRepository;
         this.cityRepository = cityRepository;
         this.countryRepository = countryRepository;
+        this.emailService = emailService;
+        this.request = request;
     }
 
     @Override
@@ -66,11 +73,24 @@ public class UserServiceImpl implements UserService {
 
         Optional<City> city = cityRepository.findByCityName(user.getAddress().getCity().getCityName());
 
-        city.ifPresent(value -> user.getAddress().getCity().setCityId(value.getCityId()));
+        city.ifPresentOrElse(
+                presentCity -> user.getAddress().getCity().setCityId(presentCity.getCityId()),
+                () -> user.getAddress().getCity().setCityId(null));
 
         Optional<Country> country = countryRepository.findByCountryName(user.getAddress().getCity().getCountry().getCountryName());
 
-        country.ifPresent(value -> user.getAddress().getCity().getCountry().setCountryId(value.getCountryId()));
+        country.ifPresentOrElse(
+                presentCountry -> user.getAddress().getCity().getCountry().setCountryId(presentCountry.getCountryId()),
+                () -> user.getAddress().getCity().getCountry().setCountryId(null));
+
+        if(request.getMethod().equals("POST")){
+            User createdUser = em.merge(user);
+            String link = EmailContentUtil.buildVerificationLink(request.getServerName(), request.getServerPort(), createdUser.getUserId());
+            String text = EmailContentUtil.buildEmailText(createdUser.getFirstName(), link);
+            emailService.sendEmail(createdUser.getEmail(), "Confirmation email", text);
+
+            return createdUser;
+        }
 
         return em.merge(user);
     }
