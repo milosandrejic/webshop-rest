@@ -10,7 +10,10 @@ import com.webshoprest.repositories.CountryRepository;
 import com.webshoprest.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +23,8 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     private CityRepository cityRepository;
     private CountryRepository countryRepository;
+    @PersistenceContext
+    private EntityManager em;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository, CityRepository cityRepository, CountryRepository countryRepository) {
@@ -55,16 +60,9 @@ public class UserServiceImpl implements UserService {
         throw new UserNotFoundException();
     }
 
+    @Transactional
     @Override
     public User saveOrUpdateUser(User user) {
-        if (user.getUserId() != null) {
-            if (!userRepository.existsById(user.getUserId())) {
-                throw new UserNotFoundException();
-            }
-            //User tempUser = userRepository.getOne(user.getUserId());
-            //user.setOrders(tempUser.getOrders());
-        }
-
 
         Optional<City> city = cityRepository.findByCityName(user.getAddress().getCity().getCityName());
 
@@ -74,7 +72,7 @@ public class UserServiceImpl implements UserService {
 
         country.ifPresent(value -> user.getAddress().getCity().getCountry().setCountryId(value.getCountryId()));
 
-        return userRepository.save(user);
+        return em.merge(user);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.webshoprest.api.v1.validators;
 
+import com.webshoprest.api.v1.exceptions.UserNotFoundException;
 import com.webshoprest.api.v1.util.ValidationErrorInspector;
 import com.webshoprest.domain.User;
 import com.webshoprest.repositories.UserRepository;
@@ -10,6 +11,7 @@ import org.springframework.validation.Validator;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class UserValidator implements Validator {
@@ -64,6 +66,22 @@ public class UserValidator implements Validator {
         User user = (User) o;
 
         Map<String, String> errorsMap = new HashMap<>();
+
+        Optional<User> fromDbUser = userRepository.findById(user.getUserId());
+
+        if(fromDbUser.isEmpty()){
+            throw new UserNotFoundException();
+        }
+
+        //marry //marry
+
+        if (user.getUsername() != null && userRepository.existsByUsername(user.getUsername()) && !fromDbUser.get().getUsername().equals(user.getUsername())) {
+            errors.rejectValue("username", "", "username already exists");
+        }
+
+        if(user.getEmail() != null && userRepository.existsByEmail(user.getEmail()) && !fromDbUser.get().getEmail().equals(user.getEmail())){
+            errors.rejectValue("email", "", "email already registered");
+        }
 
         if ((user.getPassword() != null && user.getConfirmPassword() != null) && !user.getPassword().equals(user.getConfirmPassword())) {
             errors.rejectValue("confirmPassword", "", "passwords must match");

@@ -135,16 +135,6 @@ class UserServiceTest {
     }
 
     @Test
-    void testUpdateUser_userNotFound() {
-        User user = new User();
-        user.setUserId(1l);
-
-        given(userRepository.existsById(anyLong())).willReturn(false);
-
-        assertThrows(UserNotFoundException.class, () -> userService.saveOrUpdateUser(user));
-    }
-
-    @Test
     void deleteById() {
         given(userRepository.existsById(anyLong())).willReturn(true);
 
