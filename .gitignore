@@ -1,0 +1,7 @@
+*.idea
+*.mvn
+*.vscode
+*/target
+*.iml
+/webshop-rest-api/src/main/resources/s2.properties
+/webshop-rest-api/src/main/resources/email.properties
