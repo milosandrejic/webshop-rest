@@ -44,17 +44,9 @@ public class UserController {
         return userService.findByUsername(username);
     }
 
-    @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/")
-    public User createUser(@Valid @RequestBody User user, BindingResult userBindingResult) {
-        userValidator.validate(user, userBindingResult);
-        return userService.saveOrUpdateUser(user);
-    }
-
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/")
     public User updateUser(@Valid @RequestBody User user, BindingResult userBindingResult){
-
         userValidator.validateForUpdate(user, userBindingResult);
         return userService.saveOrUpdateUser(user);
     }

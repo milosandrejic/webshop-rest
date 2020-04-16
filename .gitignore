@@ -3,5 +3,10 @@
 *.vscode
 */target
 *.iml
+*.project
+*.classpath
+*.eclipse
+*/settings
+
 /webshop-rest-api/src/main/resources/s2.properties
 /webshop-rest-api/src/main/resources/email.properties

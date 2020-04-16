@@ -2,12 +2,15 @@ package com.webshoprest.api.v1.bootstrap;
 
 import com.webshoprest.domain.*;
 import com.webshoprest.domain.enums.ItemLevels;
+import com.webshoprest.domain.enums.Roles;
 import com.webshoprest.domain.enums.UnitOfMeasure;
+import com.webshoprest.domain.security.Role;
 import com.webshoprest.repositories.ItemLevelRepository;
 import com.webshoprest.repositories.ItemRepository;
 import com.webshoprest.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -29,15 +32,19 @@ public class BootstrapInitialData implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
+        Role role = new Role();
+        role.setRole(Roles.ADMIN);
+
         User user = new User();
         user.setUserId(1L);
         user.setFirstName("John");
         user.setLastName("Doe");
         user.setUsername("username");
-        user.setPassword("password");
+        user.setPassword(new BCryptPasswordEncoder().encode("password"));
         user.setDob(LocalDate.of(1990, 2,12));
         user.setEmail("johndoe@gmail.com");
         user.setPhoneNumber("1234521312");
+        user.setRole(role);
 
         ShoppingCart shoppingCart = new ShoppingCart();
         shoppingCart.setUser(user);

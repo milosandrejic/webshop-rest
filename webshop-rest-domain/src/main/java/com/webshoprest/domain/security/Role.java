@@ -18,7 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "role")
-public class Role implements Comparable<Role> {
+public class Role {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,9 +33,4 @@ public class Role implements Comparable<Role> {
 	@OneToMany(mappedBy = "role")
 	private List<User> users;
 	
-	@Override
-	public int compareTo(Role role) {
-		return this.role.compareTo(role.getRole());
-	}
-
 }

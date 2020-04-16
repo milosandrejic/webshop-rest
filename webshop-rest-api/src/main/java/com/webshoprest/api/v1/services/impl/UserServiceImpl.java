@@ -11,6 +11,7 @@ import com.webshoprest.repositories.CityRepository;
 import com.webshoprest.repositories.CountryRepository;
 import com.webshoprest.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,16 +29,19 @@ public class UserServiceImpl implements UserService {
     private CountryRepository countryRepository;
     private EmailService emailService;
     private HttpServletRequest request;
+    private BCryptPasswordEncoder passwordEncoder;
+
     @PersistenceContext
     private EntityManager em;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, CityRepository cityRepository, CountryRepository countryRepository, EmailService emailService, HttpServletRequest request) {
+    public UserServiceImpl(UserRepository userRepository, CityRepository cityRepository, CountryRepository countryRepository, EmailService emailService, HttpServletRequest request, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.cityRepository = cityRepository;
         this.countryRepository = countryRepository;
         this.emailService = emailService;
         this.request = request;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -84,10 +88,14 @@ public class UserServiceImpl implements UserService {
                 () -> user.getAddress().getCity().getCountry().setCountryId(null));
 
         if(request.getMethod().equals("POST")){
+
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
             User createdUser = em.merge(user);
             String link = EmailContentUtil.buildVerificationLink(request.getServerName(), request.getServerPort(), createdUser.getUserId());
             String text = EmailContentUtil.buildEmailText(createdUser.getFirstName(), link);
             emailService.sendEmail(createdUser.getEmail(), "Confirmation email", text);
+
 
             return createdUser;
         }
