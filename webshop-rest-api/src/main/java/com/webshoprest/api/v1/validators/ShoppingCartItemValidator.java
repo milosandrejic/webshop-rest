@@ -10,9 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Component
 public class ShoppingCartItemValidator implements Validator {
 
@@ -32,7 +29,6 @@ public class ShoppingCartItemValidator implements Validator {
     public void validate(Object o, Errors errors) {
 
         ShoppingCartItem shoppingCartItem = (ShoppingCartItem) o;
-        Map<String, String> errorsMap = new HashMap<>();
 
         if(shoppingCartItem.getShoppingCartItemId() != null && shoppingCartItemRepository.existsById(shoppingCartItem.getShoppingCartItemId())){
             errors.rejectValue("shoppingCartItemId", "", "Item is already added to shopping cart.");

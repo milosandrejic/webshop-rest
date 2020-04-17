@@ -12,6 +12,7 @@ import com.webshoprest.domain.ItemLevel;
 import com.webshoprest.domain.OrderedItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +21,8 @@ import javax.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import static com.webshoprest.api.v1.security.SecurityConstants.ADMIN_AUTHORITY_STRING;
 
 @RequestMapping(ItemController.BASE_PATH)
 @RestController
@@ -51,6 +54,7 @@ public class ItemController {
         return itemService.findById(itemId);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public Item saveNewItem(@Valid @RequestBody Item item, BindingResult itemBindingResult) {
@@ -58,6 +62,7 @@ public class ItemController {
         return itemService.saveOrUpdateItem(item);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/{itemId}/upload-image")
     public String uploadItemImage(@RequestPart("image") MultipartFile image,
@@ -72,6 +77,7 @@ public class ItemController {
         return item.getImageUrl();
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/{itemId}")
     public Item updateUser(@PathVariable Long itemId,
@@ -86,9 +92,10 @@ public class ItemController {
         return itemService.saveOrUpdateItem(item);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/{itemId}/update-image")
-    public String updateUser(@PathVariable Long itemId,
+    public String updateItemImage(@PathVariable Long itemId,
                              @RequestPart("image") MultipartFile image) throws IOException {
 
         Item item = itemService.findById(itemId);
@@ -100,6 +107,7 @@ public class ItemController {
         return item.getImageUrl();
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{itemId}/delete-image")
     public void deleteItemImage(@PathVariable Long itemId){
@@ -107,23 +115,27 @@ public class ItemController {
         imageService.deleteImage(item.getItemId());
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{itemId}")
     public void deleteItem(@PathVariable Long itemId){
         itemService.deleteItemById(itemId);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{itemId}/item-level")
     public ItemLevel getItemLevel(@PathVariable Long itemId){
         return itemService.getLevel(itemId);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{itemId}/item-category")
     public ItemCategory getItemCategory(@PathVariable Long itemId){
         return itemService.getCategory(itemId);
     }
+
 
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/top-selling")

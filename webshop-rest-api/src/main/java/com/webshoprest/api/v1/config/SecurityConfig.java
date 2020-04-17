@@ -51,7 +51,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .cors().disable()
                 .exceptionHandling()
-                .defaultAuthenticationEntryPointFor(userAuthenticationEntryPoint, userAuthEntryPointPath)
+                .defaultAuthenticationEntryPointFor(userAuthenticationEntryPoint, userAuthEntryPointPath) //entry path for login
                 .and()
                 .exceptionHandling()
                 .defaultAuthenticationEntryPointFor(globalEntryPoint, globalEntryPointPaths)

@@ -5,9 +5,12 @@ import com.webshoprest.domain.Item;
 import com.webshoprest.domain.ItemLevel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+import static com.webshoprest.api.v1.security.SecurityConstants.ADMIN_AUTHORITY_STRING;
 
 @RequestMapping(ItemLevelController.BASE_PATH)
 @RestController
@@ -34,6 +37,7 @@ public class ItemLevelController {
         return itemLevelService.findById(itemLevelId);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{itemLevelId}/items")
     public List<Item> getItemLevelItems(@PathVariable Long itemLevelId){

@@ -7,11 +7,14 @@ import com.webshoprest.domain.Item;
 import com.webshoprest.domain.ItemCategory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+
+import static com.webshoprest.api.v1.security.SecurityConstants.ADMIN_AUTHORITY_STRING;
 
 
 @RequestMapping(ItemCategoryController.BASE_URL)
@@ -37,10 +40,11 @@ public class ItemCategoryController {
 
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{itemCategoryId}")
-    public ItemCategory getItemCategoryByName(@PathVariable Long itemCategoryId){
+    public ItemCategory getItemCategoryById(@PathVariable Long itemCategoryId){
         return itemCategoryService.findById(itemCategoryId);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public ItemCategory createNewItemCategory(@Valid @RequestBody ItemCategory itemCategory,
@@ -49,6 +53,7 @@ public class ItemCategoryController {
         return itemCategoryService.saveOrUpdateCategory(itemCategory);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.OK)
     @PutMapping
     public ItemCategory updateExistingItemCategory(@Valid @RequestBody ItemCategory itemCategory,
@@ -62,6 +67,7 @@ public class ItemCategoryController {
         return itemCategoryService.saveOrUpdateCategory(itemCategory);
     }
 
+    @PreAuthorize(ADMIN_AUTHORITY_STRING)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{itemCategoryId}")
     public void deleteItemCategory(@PathVariable Long itemCategoryId){

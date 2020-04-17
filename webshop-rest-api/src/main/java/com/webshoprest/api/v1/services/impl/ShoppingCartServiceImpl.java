@@ -124,7 +124,12 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                     throw new ItemAlreadyAddToShoppingCartException();
                 }
 
-                user.getShoppingCart().getShoppingCartItems().add(mapToCartItem(item, orderedQty));
+                user.getShoppingCart()
+                        .getShoppingCartItems().add(mapToCartItem(item, orderedQty));
+
+                user.getShoppingCart()
+                        .setTotalAmount(calculateTotalShoppingCartValue(user.getShoppingCart()));
+
                 return shoppingCartRepository.save(user.getShoppingCart());
             } else {
                 throw new ShoppingCartDontBelongToUserException();
@@ -153,7 +158,9 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
             if (shoppingCart.getShoppingCartId().equals(shoppingCartId)) {
                 if (shoppingCartItemRepository.existsById(itemId)) {
-                    shoppingCart.getShoppingCartItems().removeIf(item -> item.getShoppingCartItemId().equals(itemId));
+                    if(shoppingCart.getShoppingCartItems().removeIf(item -> item.getShoppingCartItemId().equals(itemId))){
+                        shoppingCart.setTotalAmount(calculateTotalShoppingCartValue(shoppingCart));
+                    }
                     return shoppingCartRepository.save(shoppingCart);
                 }
                 throw new ItemNotFoundException();
@@ -172,6 +179,13 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         System.out.println("item: " + item.getPrice() + "\n qty=" + orderedQty);
         shoppingCartItem.setTotalItemPrice(item.getPrice() * orderedQty);
         return shoppingCartItem;
+    }
+
+    private double calculateTotalShoppingCartValue(ShoppingCart shoppingCart){
+        return shoppingCart.getShoppingCartItems()
+                .stream()
+                .mapToDouble(ShoppingCartItem::getTotalItemPrice)
+                .sum();
     }
 
 }
