@@ -4,9 +4,12 @@ import com.webshoprest.api.v1.exceptions.UserNotFoundException;
 import com.webshoprest.api.v1.services.EmailService;
 import com.webshoprest.api.v1.services.UserService;
 import com.webshoprest.api.v1.util.EmailContentUtil;
+import com.webshoprest.api.v1.util.EmailType;
+import com.webshoprest.api.v1.util.SecurityUtility;
 import com.webshoprest.domain.City;
 import com.webshoprest.domain.Country;
 import com.webshoprest.domain.User;
+import com.webshoprest.domain.security.Token;
 import com.webshoprest.repositories.CityRepository;
 import com.webshoprest.repositories.CountryRepository;
 import com.webshoprest.repositories.UserRepository;
@@ -30,18 +33,20 @@ public class UserServiceImpl implements UserService {
     private EmailService emailService;
     private HttpServletRequest request;
     private BCryptPasswordEncoder passwordEncoder;
+    private SecurityUtility securityUtility;
 
     @PersistenceContext
     private EntityManager em;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, CityRepository cityRepository, CountryRepository countryRepository, EmailService emailService, HttpServletRequest request, BCryptPasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, CityRepository cityRepository, CountryRepository countryRepository, EmailService emailService, HttpServletRequest request, BCryptPasswordEncoder passwordEncoder, SecurityUtility securityUtility) {
         this.userRepository = userRepository;
         this.cityRepository = cityRepository;
         this.countryRepository = countryRepository;
         this.emailService = emailService;
         this.request = request;
         this.passwordEncoder = passwordEncoder;
+        this.securityUtility = securityUtility;
     }
 
     @Override
@@ -88,14 +93,17 @@ public class UserServiceImpl implements UserService {
                 () -> user.getAddress().getCity().getCountry().setCountryId(null));
 
         if(request.getMethod().equals("POST")){
-
             user.setPassword(passwordEncoder.encode(user.getPassword()));
+            Token token = securityUtility.generateToken();
+            user.setToken(token);
+            user.setEnabled(false);
 
             User createdUser = em.merge(user);
-            String link = EmailContentUtil.buildVerificationLink(request.getServerName(), request.getServerPort(), createdUser.getUserId());
-            String text = EmailContentUtil.buildEmailText(createdUser.getFirstName(), link);
-            emailService.sendEmail(createdUser.getEmail(), "Confirmation email", text);
 
+            String link = EmailContentUtil
+                    .buildVerificationLink(request.getServerName(), request.getServerPort(), token.getToken());
+            String text = EmailContentUtil.buildEmailText(createdUser.getFirstName(), link, EmailType.CONFIRMATION);
+            emailService.sendEmail(createdUser.getEmail(), "Confirmation email", text);
 
             return createdUser;
         }

@@ -1,7 +1,9 @@
 package com.webshoprest.api.v1.util;
 
+import com.webshoprest.api.v1.security.SecurityConstants;
 import com.webshoprest.api.v1.services.impl.UserSecurityService;
 import com.webshoprest.domain.User;
+import com.webshoprest.domain.security.Token;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.AccessDeniedException;
@@ -9,6 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.security.Principal;
+import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class SecurityUtility {
@@ -62,6 +66,17 @@ public class SecurityUtility {
                 throw new AccessDeniedException("Access denied.");
             }
         }
+    }
+
+    public Token generateToken(){
+        Token token = new Token();
+        token.setToken(UUID.randomUUID().toString());
+        token.setExpiration(SecurityConstants.EMAIL_TOKEN_EXPIRATION);
+        return token;
+    }
+
+    public boolean validateToken(Token token) {
+        return (token.getCreated() + token.getExpiration()) < new Date().getTime();
     }
 
 }

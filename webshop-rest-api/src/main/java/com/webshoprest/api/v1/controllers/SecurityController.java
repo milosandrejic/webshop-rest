@@ -1,5 +1,6 @@
 package com.webshoprest.api.v1.controllers;
 
+import com.webshoprest.api.v1.exceptions.InvalidTokenException;
 import com.webshoprest.api.v1.security.JwtTokenProvider;
 import com.webshoprest.api.v1.security.SecurityConstants;
 import com.webshoprest.api.v1.security.payload.LoginRequest;
@@ -8,6 +9,7 @@ import com.webshoprest.api.v1.services.UserService;
 import com.webshoprest.api.v1.validators.LoginRequestValidator;
 import com.webshoprest.api.v1.validators.UserValidator;
 import com.webshoprest.domain.User;
+import com.webshoprest.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,6 +20,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @RequestMapping("/api/v1/sec")
 @RestController
@@ -28,25 +31,30 @@ public class SecurityController {
     private LoginRequestValidator loginValidator;
     private JwtTokenProvider tokenProvider;
     private AuthenticationManager authenticationManager;
+    private UserRepository userRepository;
 
     @Autowired
-    public SecurityController(UserService userService, UserValidator userValidator, LoginRequestValidator loginValidator, JwtTokenProvider tokenProvider, AuthenticationManager authenticationManager) {
+    public SecurityController(UserService userService, UserValidator userValidator, LoginRequestValidator loginValidator, JwtTokenProvider tokenProvider, AuthenticationManager authenticationManager, UserRepository userRepository) {
         this.userService = userService;
         this.userValidator = userValidator;
         this.loginValidator = loginValidator;
         this.tokenProvider = tokenProvider;
         this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
     }
+
 
     @ResponseStatus(HttpStatus.ACCEPTED)
     @PostMapping("/auth")
-    public SuccessLoginResponse authenticateUser(@RequestBody @Valid LoginRequest request, BindingResult loginBindingResult){
+    public SuccessLoginResponse authenticateUser(@RequestBody @Valid LoginRequest request, BindingResult loginBindingResult) {
         loginValidator.validate(request, loginBindingResult);
+
+        userService.findByUsername(request.getUsername());
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                  request.getUsername(),
-                  request.getPassword()
+                        request.getUsername(),
+                        request.getPassword()
                 )
         );
 
@@ -65,5 +73,18 @@ public class SecurityController {
     public User createUser(@Valid @RequestBody User user, BindingResult userBindingResult) {
         userValidator.validate(user, userBindingResult);
         return userService.saveOrUpdateUser(user);
+    }
+
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/confirm-email")
+    public void confirmEmail(@RequestParam("tk") String token) {
+        Optional<User> user = userRepository.findByToken(token);
+
+        if (user.isEmpty()) {
+            throw new InvalidTokenException();
+        }
+
+        user.get().setEnabled(true);
+        userRepository.save(user.get());
     }
 }

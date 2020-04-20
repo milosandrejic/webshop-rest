@@ -62,6 +62,9 @@ public class User extends NamedEntity implements UserDetails {
     @Column(name = "total_spent")
     private Double totalSpent;
 
+    @Column(name = "enabled")
+    private boolean enabled;
+
     @Valid
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "address_id")
@@ -124,6 +127,6 @@ public class User extends NamedEntity implements UserDetails {
     @JsonIgnore
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

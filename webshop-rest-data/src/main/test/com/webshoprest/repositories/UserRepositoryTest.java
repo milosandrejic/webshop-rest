@@ -46,6 +46,16 @@ class UserRepositoryTest {
         user.setDob(LocalDate.of(2000,2,2));
         user.setEmail("myemail@gmail.com");
         user.setPhoneNumber("1230225133495");
+
+        Role role = new Role();
+        role.setRole(Roles.ADMIN);
+
+        Token token = new Token();
+        token.setToken("a");
+
+        user.setRole(role);
+        user.setToken(token);
+
         userRepository.save(user);
     }
 
@@ -115,6 +125,7 @@ class UserRepositoryTest {
         user.setPhoneNumber("1153399151");
 
         Token token = new Token();
+
         Role role = new Role();
         role.setRole(Roles.ADMIN);
 
@@ -179,7 +190,13 @@ class UserRepositoryTest {
         user.setEmail("marrypublic@gmail.com");
         user.setPhoneNumber("1153399151");
 
+        Role role = new Role();
+        role.setRole(Roles.CUSTOMER_GOLD);
+
+        user.setRole(role);
+
         Token token = new Token();
+        token.setToken("a");
         user.setToken(token);
 
         User savedUser = userRepository.save(user);
@@ -219,5 +236,11 @@ class UserRepositoryTest {
     void testExistsByEmail_false() {
         boolean result = userRepository.existsByEmail("notexistingemail@gmail.com");
         assertThat(result).isFalse();
+    }
+
+    @Test
+    void testFindByToken() {
+        Optional<User> user = userRepository.findByToken("a");
+        assertThat(user.isPresent()).isTrue();
     }
 }
