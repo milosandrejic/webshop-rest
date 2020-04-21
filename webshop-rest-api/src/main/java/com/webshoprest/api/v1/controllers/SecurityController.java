@@ -6,6 +6,7 @@ import com.webshoprest.api.v1.security.SecurityConstants;
 import com.webshoprest.api.v1.security.payload.LoginRequest;
 import com.webshoprest.api.v1.security.payload.SuccessLoginResponse;
 import com.webshoprest.api.v1.services.UserService;
+import com.webshoprest.api.v1.util.SecurityUtility;
 import com.webshoprest.api.v1.validators.LoginRequestValidator;
 import com.webshoprest.api.v1.validators.UserValidator;
 import com.webshoprest.domain.User;
@@ -32,15 +33,17 @@ public class SecurityController {
     private JwtTokenProvider tokenProvider;
     private AuthenticationManager authenticationManager;
     private UserRepository userRepository;
+    private SecurityUtility securityUtility;
 
     @Autowired
-    public SecurityController(UserService userService, UserValidator userValidator, LoginRequestValidator loginValidator, JwtTokenProvider tokenProvider, AuthenticationManager authenticationManager, UserRepository userRepository) {
+    public SecurityController(UserService userService, UserValidator userValidator, LoginRequestValidator loginValidator, JwtTokenProvider tokenProvider, AuthenticationManager authenticationManager, UserRepository userRepository, SecurityUtility securityUtility) {
         this.userService = userService;
         this.userValidator = userValidator;
         this.loginValidator = loginValidator;
         this.tokenProvider = tokenProvider;
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
+        this.securityUtility = securityUtility;
     }
 
 
@@ -83,7 +86,9 @@ public class SecurityController {
         if (user.isEmpty()) {
             throw new InvalidTokenException();
         }
+        securityUtility.validateToken(user.get().getToken());
 
+        user.get().setToken(null);
         user.get().setEnabled(true);
         userRepository.save(user.get());
     }

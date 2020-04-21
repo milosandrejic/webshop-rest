@@ -1,5 +1,6 @@
 package com.webshoprest.api.v1.handlers;
 
+import com.webshoprest.api.v1.exceptions.ExpiredTokenException;
 import com.webshoprest.api.v1.exceptions.InvalidTokenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,13 @@ public class AccessDeniedHandler extends ResponseEntityExceptionHandler {
         Error error = new Error();
         error.setMessage("Access denied.");
         return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(ExpiredTokenException.class)
+    public ResponseEntity<Error> expiredTokenExceptionHandler() {
+        Error error = new Error();
+        error.setMessage("Token expired.");
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
 }
