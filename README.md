@@ -8,7 +8,7 @@ After registration every user recieves verification link to verify his email add
 
 Item images are stored at Amazon S3 service.
 
-More other enhacements comming.
+More other enhacements coming.
 
 ### security(all paths are public)
 
