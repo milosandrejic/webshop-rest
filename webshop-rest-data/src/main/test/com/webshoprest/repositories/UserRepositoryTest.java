@@ -103,6 +103,7 @@ class UserRepositoryTest {
         city.setCountry(country);
         address.setCity(city);
         user.setAddress(address);
+        user.setRole(new Role());
 
         User savedUser = userRepository.save(user);
 
@@ -149,6 +150,7 @@ class UserRepositoryTest {
         user.setDob(LocalDate.of(2000,2,2));
         user.setEmail("marrypublic@gmail.com");
         user.setPhoneNumber("1153399151");
+        user.setRole(new Role());
 
         List<Order> orders = new ArrayList<>();
         orders.add(new Order());
@@ -197,15 +199,16 @@ class UserRepositoryTest {
 
         Token token = new Token();
         token.setToken("a");
+
         user.setToken(token);
 
         User savedUser = userRepository.save(user);
-        assertThat(tokenRepository.count()).isOne();
+        assertThat(tokenRepository.count()).isEqualTo(2);
 
 
         savedUser.setToken(null);
         user = userRepository.save(savedUser);
-        assertThat(tokenRepository.count()).isZero();
+        assertThat(tokenRepository.count()).isOne();
     }
 
     @Test

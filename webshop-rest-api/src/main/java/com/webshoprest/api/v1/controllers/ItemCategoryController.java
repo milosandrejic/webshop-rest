@@ -16,7 +16,6 @@ import java.util.List;
 
 import static com.webshoprest.api.v1.security.SecurityConstants.ADMIN_AUTHORITY_STRING;
 
-
 @RequestMapping(ItemCategoryController.BASE_URL)
 @RestController
 public class ItemCategoryController {

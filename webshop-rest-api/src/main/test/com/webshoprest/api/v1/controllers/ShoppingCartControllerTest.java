@@ -2,14 +2,22 @@ package com.webshoprest.api.v1.controllers;
 
 import com.google.gson.Gson;
 import com.webshoprest.WebshopRestApplication;
+import com.webshoprest.api.v1.config.SecurityConfig;
 import com.webshoprest.api.v1.exceptions.ShoppingCartNotInitializedException;
 import com.webshoprest.api.v1.exceptions.UserNotFoundException;
 import com.webshoprest.api.v1.handlers.ShoppingCartExceptionHandler;
 import com.webshoprest.api.v1.handlers.UserExceptionHandler;
+import com.webshoprest.api.v1.security.GlobalAuthenticationEntryPoint;
+import com.webshoprest.api.v1.security.JwtTokenProvider;
+import com.webshoprest.api.v1.security.UserAuthenticationEntryPoint;
 import com.webshoprest.api.v1.services.ShoppingCartService;
+import com.webshoprest.api.v1.services.impl.UserSecurityService;
+import com.webshoprest.api.v1.util.SecurityUtility;
 import com.webshoprest.domain.Item;
 import com.webshoprest.domain.ShoppingCart;
 import com.webshoprest.domain.ShoppingCartItem;
+import com.webshoprest.domain.enums.Roles;
+import com.webshoprest.repositories.UserRepository;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,13 +26,16 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.webshoprest.api.v1.TestConfig.initAuthentication;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -33,23 +44,34 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ContextConfiguration(classes = WebshopRestApplication.class)
+@ContextConfiguration(classes = {
+        WebshopRestApplication.class,
+        SecurityConfig.class,
+        UserAuthenticationEntryPoint.class,
+        GlobalAuthenticationEntryPoint.class,
+        BCryptPasswordEncoder.class,
+        JwtTokenProvider.class,
+        UserSecurityService.class})
 @AutoConfigureMockMvc
 @WebMvcTest(ShoppingCartController.class)
 class ShoppingCartControllerTest {
 
-    @MockBean
-    private ShoppingCartService shoppingCartService;
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ShoppingCartController shoppingCartController;
-
     private final String BASE_URL = "/api/v1/users/1/shopping-cart";
 
+    @MockBean
+    private ShoppingCartService shoppingCartService;
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ShoppingCartController shoppingCartController;
+    @MockBean
+    private UserRepository userRepository;
+    @MockBean
+    private SecurityUtility securityUtility;
+
     private ShoppingCart shoppingCart;
+
+    Principal principal;
 
     @BeforeEach
     void setUp() {
@@ -60,6 +82,7 @@ class ShoppingCartControllerTest {
         shoppingCart = new ShoppingCart();
         shoppingCart.setShoppingCartId(1L);
 
+        initAuthentication(Roles.CUSTOMER_GOLD);
     }
 
     @Test
@@ -67,7 +90,7 @@ class ShoppingCartControllerTest {
         given(shoppingCartService.findByUser(anyLong())).willReturn(shoppingCart);
 
         mockMvc.perform(get(BASE_URL)
-                    .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shoppingCartId", equalTo(1)));
     }
@@ -78,7 +101,7 @@ class ShoppingCartControllerTest {
         given(shoppingCartService.findByUser(anyLong())).willThrow(ShoppingCartNotInitializedException.class);
 
         mockMvc.perform(get(BASE_URL)
-                    .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isNotFound());
     }
@@ -89,7 +112,7 @@ class ShoppingCartControllerTest {
         given(shoppingCartService.findByUser(anyLong())).willThrow(UserNotFoundException.class);
 
         mockMvc.perform(get(BASE_URL)
-                    .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(e -> e.getResolvedException().getClass().equals(UserNotFoundException.class));
     }
@@ -100,7 +123,7 @@ class ShoppingCartControllerTest {
         given(shoppingCartService.initUserShoppingCart(anyLong())).willReturn(shoppingCart);
 
         mockMvc.perform(post(BASE_URL + "/init")
-                    .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated());
     }
 
@@ -110,7 +133,7 @@ class ShoppingCartControllerTest {
         given(shoppingCartService.initUserShoppingCart(anyLong())).willThrow(UserNotFoundException.class);
 
         mockMvc.perform(post(BASE_URL + "/init")
-                    .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(e -> e.getResolvedException().getClass().equals(UserNotFoundException.class));
     }
@@ -124,12 +147,10 @@ class ShoppingCartControllerTest {
         items.add(new ShoppingCartItem());
         items.add(new ShoppingCartItem());
 
-
-
         given(shoppingCartService.getShoppingCartItems(anyLong(), anyLong())).willReturn(items);
 
         mockMvc.perform(get(BASE_URL + "/1/cart-items")
-                    .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()", equalTo(4)));
 
@@ -153,8 +174,8 @@ class ShoppingCartControllerTest {
         given(shoppingCartService.addItemToShoppingCart(anyLong(), anyLong(), anyLong(), anyLong())).willReturn(shoppingCart);
 
         mockMvc.perform(post(BASE_URL + "/1/cart-items?qty=10&itemId=1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(new Gson().toJson(item)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new Gson().toJson(item)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shoppingCartItems.size()", equalTo(4)));
     }
@@ -173,10 +194,10 @@ class ShoppingCartControllerTest {
         shoppingCart.setShoppingCartItems(cartItem);
 
 
-        given(shoppingCartService.deleteItemFromShoppingCart(anyLong(), anyLong(),anyLong())).willReturn(shoppingCart);
+        given(shoppingCartService.deleteItemFromShoppingCart(anyLong(), anyLong(), anyLong())).willReturn(shoppingCart);
 
         mockMvc.perform(delete(BASE_URL + "/1/cart-items/1")
-                    .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shoppingCartItems.size()", equalTo(5)));
     }

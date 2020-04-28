@@ -158,6 +158,7 @@ class ShoppingCartServiceTest {
         ShoppingCartItem shoppingCartItem = new ShoppingCartItem();
         shoppingCartItem.setShoppingCart(shoppingCart);
         shoppingCartItem.setItem(item);
+        shoppingCartItem.setTotalItemPrice(20.00);
 
         cartItems.add(shoppingCartItem);
 
@@ -269,9 +270,11 @@ class ShoppingCartServiceTest {
     void deleteItemFromShoppingCart() {
         ShoppingCartItem shoppingCartItem = new ShoppingCartItem();
         shoppingCartItem.setShoppingCartItemId(5L);
+        shoppingCartItem.setTotalItemPrice(20.00);
 
         ShoppingCartItem shoppingCartItem2 = new ShoppingCartItem();
         shoppingCartItem2.setShoppingCartItemId(4L);
+        shoppingCartItem2.setTotalItemPrice(20.00);
 
         List<ShoppingCartItem> cartItems = new ArrayList<>();
         cartItems.add(shoppingCartItem);
@@ -282,15 +285,14 @@ class ShoppingCartServiceTest {
         user.setShoppingCart(shoppingCart);
 
         given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
-        //given(userRepository.save(user)).willReturn(user);
         given(shoppingCartRepository.save(any(ShoppingCart.class))).willReturn(shoppingCart);
         given(shoppingCartItemRepository.existsById(anyLong())).willReturn(true);
 
         ShoppingCart cart = shoppingCartService.deleteItemFromShoppingCart(1L, 2L, 5L);
 
         assertThat(cart.getShoppingCartItems().size()).isEqualTo(1);
+        assertThat(cart.getTotalAmount()).isEqualTo(20.00);
         then(userRepository).should(times(1)).findById(1L);
-        //then(userRepository).should(times(1)).save(user);
         then(shoppingCartRepository).should(times(1)).save(any(ShoppingCart.class));
         then(shoppingCartItemRepository).should(times(1)).existsById(5L);
     }

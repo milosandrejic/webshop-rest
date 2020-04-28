@@ -2,13 +2,21 @@ package com.webshoprest.api.v1.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webshoprest.WebshopRestApplication;
+import com.webshoprest.api.v1.config.SecurityConfig;
 import com.webshoprest.api.v1.exceptions.OrderNotFoundException;
 import com.webshoprest.api.v1.exceptions.UserNotFoundException;
+import com.webshoprest.api.v1.security.GlobalAuthenticationEntryPoint;
+import com.webshoprest.api.v1.security.JwtTokenProvider;
+import com.webshoprest.api.v1.security.UserAuthenticationEntryPoint;
 import com.webshoprest.api.v1.services.OrderService;
+import com.webshoprest.api.v1.services.impl.UserSecurityService;
+import com.webshoprest.api.v1.util.SecurityUtility;
 import com.webshoprest.domain.Item;
 import com.webshoprest.domain.Order;
 import com.webshoprest.domain.OrderNumberGenerator;
 import com.webshoprest.domain.OrderedItem;
+import com.webshoprest.domain.enums.Roles;
+import com.webshoprest.repositories.UserRepository;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -27,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.webshoprest.api.v1.TestConfig.initAuthentication;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -38,7 +48,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ContextConfiguration(classes = WebshopRestApplication.class)
+@ContextConfiguration(classes = {
+        WebshopRestApplication.class,
+        SecurityConfig.class,
+        UserAuthenticationEntryPoint.class,
+        GlobalAuthenticationEntryPoint.class,
+        BCryptPasswordEncoder.class,
+        JwtTokenProvider.class,
+        UserSecurityService.class})
 @AutoConfigureMockMvc
 @WebMvcTest(OrderController.class)
 class OrderControllerTest {
@@ -54,8 +71,11 @@ class OrderControllerTest {
     @Autowired
     private WebApplicationContext context;
 
-    @Autowired
-    private OrderController orderController;
+    @MockBean
+    private UserRepository userRepository;
+
+    @MockBean
+    private SecurityUtility securityUtility;
 
     private Order validOrder;
 
@@ -127,6 +147,7 @@ class OrderControllerTest {
     @SneakyThrows
     @Test
     void testCreateOrder() {
+        initAuthentication(Roles.CUSTOMER_GOLD);
         Map<Long, Long> orderMap = new HashMap<>();
 
         Item item1 = new Item();
@@ -156,6 +177,7 @@ class OrderControllerTest {
     @SneakyThrows
     @Test
     void testCreateOrder_userNotFound() {
+        initAuthentication(Roles.CUSTOMER_GOLD);
         Map<Long, Long> orderMap = new HashMap<>();
 
         Item item1 = new Item();
@@ -195,6 +217,7 @@ class OrderControllerTest {
     @SneakyThrows
     @Test
     void testDeleteOrder() {
+        initAuthentication(Roles.CUSTOMER_GOLD);
         mockMvc.perform(delete(BASE_URL + "/1")
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
@@ -205,6 +228,7 @@ class OrderControllerTest {
     @SneakyThrows
     @Test
     void testDeleteOrder_userNotFound() {
+        initAuthentication(Roles.CUSTOMER_GOLD);
         doThrow(UserNotFoundException.class).when(orderService).deleteOrder(anyLong(), anyLong());
 
         mockMvc.perform(delete(BASE_URL + "/1")
@@ -217,6 +241,7 @@ class OrderControllerTest {
     @SneakyThrows
     @Test
     void testDeleteOrder_orderNotFound() {
+        initAuthentication(Roles.CUSTOMER_GOLD);
         doThrow(OrderNotFoundException.class).when(orderService).deleteOrder(anyLong(), anyLong());
 
         mockMvc.perform(delete(BASE_URL + "/1")

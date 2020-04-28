@@ -2,15 +2,19 @@ package com.webshoprest.api.v1.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webshoprest.WebshopRestApplication;
+import com.webshoprest.api.v1.config.SecurityConfig;
 import com.webshoprest.api.v1.exceptions.EmptyItemsListException;
 import com.webshoprest.api.v1.exceptions.ItemCategoryNotFoundException;
-import com.webshoprest.api.v1.handlers.EntityValidationExceptionHandler;
-import com.webshoprest.api.v1.handlers.ItemCategoryExceptionHandler;
-import com.webshoprest.api.v1.handlers.ItemExceptionHandler;
+import com.webshoprest.api.v1.security.GlobalAuthenticationEntryPoint;
+import com.webshoprest.api.v1.security.JwtTokenProvider;
+import com.webshoprest.api.v1.security.UserAuthenticationEntryPoint;
 import com.webshoprest.api.v1.services.ItemCategoryService;
+import com.webshoprest.api.v1.services.impl.UserSecurityService;
 import com.webshoprest.api.v1.validators.ItemCategoryValidator;
 import com.webshoprest.domain.Item;
 import com.webshoprest.domain.ItemCategory;
+import com.webshoprest.domain.enums.Roles;
+import com.webshoprest.repositories.UserRepository;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,22 +24,33 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
 
+import static com.webshoprest.api.v1.TestConfig.initAuthentication;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ContextConfiguration(classes = WebshopRestApplication.class)
+@ContextConfiguration(classes = {
+        WebshopRestApplication.class,
+        SecurityConfig.class,
+        UserAuthenticationEntryPoint.class,
+        GlobalAuthenticationEntryPoint.class,
+        BCryptPasswordEncoder.class,
+        JwtTokenProvider.class,
+        UserSecurityService.class})
 @AutoConfigureMockMvc
 @WebMvcTest(ItemCategoryController.class)
 class ItemCategoryControllerTest {
@@ -50,16 +65,17 @@ class ItemCategoryControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ItemCategoryController itemCategoryController;
+    private WebApplicationContext context;
+
+    @MockBean
+    private UserRepository userRepository;
 
     ItemCategory validItemCategory = new ItemCategory();
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(itemCategoryController)
-                .setControllerAdvice(ItemCategoryExceptionHandler.class,
-                        EntityValidationExceptionHandler.class,
-                        ItemExceptionHandler.class)
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .alwaysDo(print())
                 .build();
 
         validItemCategory.setItemCategoryId(1L);
@@ -103,6 +119,8 @@ class ItemCategoryControllerTest {
     @SneakyThrows
     @Test
     void testCreateNewItemCategory_validationPass() {
+        initAuthentication(Roles.ADMIN);
+
         ItemCategory itemCategory = new ItemCategory();
         itemCategory.setItemCategoryName("category");
         itemCategory.setItemCategoryDescription("desc");
@@ -120,6 +138,8 @@ class ItemCategoryControllerTest {
     @SneakyThrows
     @Test
     void testCreateItemCategory_validationFail() {
+        initAuthentication(Roles.ADMIN);
+
         given(itemCategoryService.saveOrUpdateCategory(any(ItemCategory.class))).willReturn(validItemCategory);
 
         mockMvc.perform(post(ItemCategoryController.BASE_URL)
@@ -132,6 +152,8 @@ class ItemCategoryControllerTest {
     @SneakyThrows
     @Test
     void testUpdateItemCategory_validationFail() {
+        initAuthentication(Roles.ADMIN);
+
         given(itemCategoryService.saveOrUpdateCategory(any(ItemCategory.class))).willReturn(validItemCategory);
 
         mockMvc.perform(put(ItemCategoryController.BASE_URL)
@@ -144,6 +166,8 @@ class ItemCategoryControllerTest {
     @SneakyThrows
     @Test
     void testUpdateNewItemCategory_validationPass() {
+        initAuthentication(Roles.ADMIN);
+
         ItemCategory itemCategory = new ItemCategory();
         itemCategory.setItemCategoryName("category");
         itemCategory.setItemCategoryDescription("desc");
@@ -161,6 +185,8 @@ class ItemCategoryControllerTest {
     @SneakyThrows
     @Test
     void testUpdateItemCategory_itemCategoryNotFound() {
+        initAuthentication(Roles.ADMIN);
+
         ItemCategory itemCategory = new ItemCategory();
         itemCategory.setItemCategoryName("category");
         itemCategory.setItemCategoryDescription("desc");
@@ -177,6 +203,8 @@ class ItemCategoryControllerTest {
     @SneakyThrows
     @Test
     void testDeleteItemCategory(){
+        initAuthentication(Roles.ADMIN);
+
         mockMvc.perform(delete(ItemCategoryController.BASE_URL + "/1")
                     .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
@@ -185,6 +213,8 @@ class ItemCategoryControllerTest {
     @SneakyThrows
     @Test
     void testDeleteItemCategory_itemCategoryNotFound(){
+        initAuthentication(Roles.ADMIN);
+
         doThrow(ItemCategoryNotFoundException.class).when(itemCategoryService).deleteById(anyLong());
 
         mockMvc.perform(delete(ItemCategoryController.BASE_URL + "/1")

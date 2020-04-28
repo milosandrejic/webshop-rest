@@ -73,7 +73,7 @@ class OrderServiceTest {
 
     @Test
     void findAllOrdersFromUser_DontHaveOrders() {
-
+        user.setOrders(null);
         given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
 
         assertThrows(UserDontHaveOrdersException.class, () -> orderService.findAllOrdersFromUser(1L));
@@ -104,7 +104,7 @@ class OrderServiceTest {
 
     @Test
     void findUsersSpecificOrder_OrderDontExist() {
-
+        user.setOrders(null);
         given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
 
         assertThrows(OrderNotFoundException.class, () -> orderService.findUsersSpecificOrder(1L, 2L));
@@ -204,10 +204,11 @@ class OrderServiceTest {
 
     @Test
     void deleteOrder_OrderNotPresent() {
+        user.setOrders(orders);
 
         given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
 
-        assertThrows(OrderNotFoundException.class, () -> orderService.deleteOrder(1L, 2L));
+        assertThrows(OrderNotFoundException.class, () -> orderService.deleteOrder(1L, 22L));
         then(userRepository).should(times(1)).findById(anyLong());
 
     }

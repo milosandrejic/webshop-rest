@@ -23,9 +23,11 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Optional;
 
-@RequestMapping("/api/v1/sec")
+@RequestMapping(SecurityController.BASE_URL)
 @RestController
 public class SecurityController {
+    
+    public static final String BASE_URL  = "/api/v1/sec";
 
     private UserService userService;
     private UserValidator userValidator;

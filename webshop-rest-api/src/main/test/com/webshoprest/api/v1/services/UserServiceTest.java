@@ -2,10 +2,12 @@ package com.webshoprest.api.v1.services;
 
 import com.webshoprest.api.v1.exceptions.UserNotFoundException;
 import com.webshoprest.api.v1.services.impl.UserServiceImpl;
+import com.webshoprest.api.v1.util.SecurityUtility;
 import com.webshoprest.domain.Address;
 import com.webshoprest.domain.City;
 import com.webshoprest.domain.Country;
 import com.webshoprest.domain.User;
+import com.webshoprest.domain.security.Token;
 import com.webshoprest.repositories.CityRepository;
 import com.webshoprest.repositories.CountryRepository;
 import com.webshoprest.repositories.UserRepository;
@@ -14,7 +16,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.persistence.EntityManager;
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +33,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
+@ContextConfiguration(classes = {EntityManager.class})
 class UserServiceTest {
 
     @Mock
@@ -36,6 +44,21 @@ class UserServiceTest {
 
     @Mock
     private CountryRepository countryRepository;
+
+    @Mock
+    private HttpServletRequest request;
+
+    @Mock
+    private BCryptPasswordEncoder encoder;
+
+    @Mock
+    private SecurityUtility securityUtility;
+
+    @Mock
+    private EntityManager em;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -50,6 +73,7 @@ class UserServiceTest {
         user = new User();
         user.setUserId(1L);
         user.setUsername("username");
+        user.setPassword("password");
     }
 
     @Test
@@ -107,6 +131,8 @@ class UserServiceTest {
 
     @Test
     void saveOrUpdateUser() {
+        ReflectionTestUtils.setField(userService, "em", em);
+
         Country country = new Country();
         country.setCountryName("Serbia");
 
@@ -119,19 +145,24 @@ class UserServiceTest {
         address.setCity(city);
         user.setAddress(address);
 
+        Token token = new Token();
+        token.setToken("token");
 
         given(userRepository.existsById(anyLong())).willReturn(true);
         given(userRepository.findById(anyLong())).willReturn(Optional.of(user));
-        given(userRepository.save(any(User.class))).willReturn(user);
         given(cityRepository.findByCityName(anyString())).willReturn(Optional.of(city));
         given(countryRepository.findByCountryName(anyString())).willReturn(Optional.of(country));
+        given(request.getMethod()).willReturn("POST");
+        given(encoder.encode(anyString())).willReturn("hash");
+        given(securityUtility.generateToken()).willReturn(token);
+        given(em.merge(any(User.class))).willAnswer(e -> e.getArgument(0));
 
         User savedUser = userService.saveOrUpdateUser(user);
 
         assertThat(savedUser.getUserId()).isEqualTo(user.getUserId());
         assertThat(savedUser.getAddress().getCity().getCityName()).isEqualTo(city.getCityName());
         assertThat(savedUser.getAddress().getCity().getCountry().getCountryName()).isEqualTo(country.getCountryName());
-        then(userRepository).should(times(1)).save(any(User.class));
+        assertThat(savedUser.getPassword()).isEqualTo("hash");
     }
 
     @Test
