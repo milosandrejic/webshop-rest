@@ -1,7 +1,5 @@
 # webshop-rest-api
 
-[![codecov](https://codecov.io/gh/milosandrejic/webshop-rest/branch/master/graph/badge.svg?token=S04TXZ1RY9)](https://codecov.io/gh/milosandrejic/webshop-rest)
-
 Webshop REST API can have two type of users, CUSTOMER and ADMIN role, these roles have different permissions.
 Customer role can order products, edit his personal info, reset password, etc.
 Admin role can create, update, delete items, view top selled items, user info, orders, etc.
