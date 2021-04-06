@@ -20,7 +20,7 @@ public class ImageServiceImpl implements ImageService {
     @Value("${awsProperties.endpointUrl}")
     private String endpointUrl;
 
-    @Value("${imageExtension}")
+    @Value("${awsProperties.imageExtension}")
     private String imageExtension;
 
     private AmazonS3 awsS3;
